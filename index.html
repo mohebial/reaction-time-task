@@ -308,6 +308,7 @@
 
                 setTimeout(showTarget, DELAY_MS);
             }
+            
             async function endExperiment() {
                 const totalRT = reactionTimes.reduce((acc, curr) => acc + curr, 0);
                 const userAvgRT = totalRT / reactionTimes.length;
@@ -316,7 +317,6 @@
                 messageOverlay.style.display = 'flex';
                 loadingText.innerText = "Submitting data...";
             
-                // Bundle all 10 trials into a single array
                 const payload = reactionTimes.map((rt, index) => {
                     return {
                         "Participant_ID": participantId,
@@ -326,7 +326,6 @@
                 });
             
                 try {
-                    // Send a SINGLE fetch request with the entire array
                     await fetch(WEB_APP_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
@@ -337,6 +336,12 @@
                     
                     const response = await fetch(WEB_APP_URL);
                     let historicalRTs = await response.json();
+                    
+                    // Safety net: Check if the backend threw an error instead of returning data
+                    if (!Array.isArray(historicalRTs)) {
+                        console.error("Backend error detected:", historicalRTs);
+                        historicalRTs = []; // Fallback to an empty array so the app doesn't crash
+                    }
                     
                     historicalRTs = historicalRTs.map(Number).filter(n => !isNaN(n));
                     historicalRTs = historicalRTs.concat(reactionTimes); 
@@ -349,7 +354,6 @@
                     document.querySelector('.spinner').style.display = 'none';
                 }
             }
-
             function renderHistogram(allData, userAvg) {
                 messageOverlay.style.display = 'none';
                 resultsScreen.style.display = 'block';
